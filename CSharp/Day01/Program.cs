@@ -9,25 +9,34 @@ namespace ConsoleApplication
     {
         public static void Main(string[] args)
         {
-            var result = from part in File
-                                        .ReadAllText("Input1.txt")
-                                        .Split(',')
-                                        .Select(part => part.Trim())
-                            let left = Regex.Match(part,"L([0-9]*)")
-                            let right = Regex.Match(part,"R([0-9]*)")
-                            select new { 
-                                Left = left.Success?int.Parse(left.Groups[1].Value):0,
-                                Right = right.Success?int.Parse(right.Groups[1].Value):0
-                            };
+            var result = 
+				Math.Abs(
+					(from part in File
+						.ReadAllText("Input1.txt")
+						.Split(',')
+					let mov = Regex.Match(part,"([LR])([0-9]*)")
+					where mov.Success
+					select new { 
+						Right = mov.Groups[1].Value == "R"?-1:1,
+						Blocks = int.Parse(mov.Groups[2].Value)
+					})
+					.Aggregate(
+						new 
+						{ 
+							IncX = 0, IncY = 1, // North
+							Distance = 0 
+						}, 
+						(acum, next) => 
+							new 
+							{ 
+								IncX = - acum.IncY * next.Right, 
+								IncY = acum.IncX * next.Right, 
+								Distance = acum.Distance + next.Right * next.Blocks * (acum.IncX - acum.IncY) 
+							}
+						)
+					.Distance);
 
-            var position = result.Aggregate(
-                new { IncX = 0, IncY = 0 }, 
-                (dir, src) => 
-                {
-                    return new { IncX = 1, IncY = 0 };
-                });
-
-            Console.WriteLine(position);
+            Console.WriteLine(result);
         }
     }
 }
