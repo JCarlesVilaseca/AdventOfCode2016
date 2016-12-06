@@ -15,55 +15,54 @@ namespace ConsoleApplication
                         //.ReadAllText("Input1.txt")
                         "R8, R4, R4, R8"
                         .Split(',')
-                    let mov = Regex.Match(part,"([LR])([0-9]*)")
-                    where mov.Success
-                    select new { 
-                        Direction = mov.Groups[1].Value == "R"?-1:1,
-                        Blocks = int.Parse(mov.Groups[2].Value)
-                    };
+                let mov = Regex.Match(part,"([LR])([0-9]*)")
+                where mov.Success
+                select new { 
+                    Direction = mov.Groups[1].Value == "R"?-1:1,
+                    Blocks = int.Parse(mov.Groups[2].Value)
+                };
 
             var part1 = 
-                Math.Abs(
-                    data
-                    .Aggregate(
+                data
+                .Aggregate(
+                    new 
+                    { 
+                        IncX = 0, IncY = 1, // Starting North
+                        Distance = 0 
+                    }, 
+                    (acum, next) => 
                         new 
                         { 
-                            IncX = 0, IncY = 1, // North
-                            Distance = 0 
-                        }, 
-                        (acum, next) => 
-                            new 
-                            { 
-                                IncX = - acum.IncY * next.Direction, 
-                                IncY = acum.IncX * next.Direction, 
-                                Distance = acum.Distance + next.Direction * next.Blocks * (acum.IncX - acum.IncY) 
-                            }
-                        )
-                    .Distance);
+                            IncX = - acum.IncY * next.Direction, 
+                            IncY = acum.IncX * next.Direction, 
+                            Distance = acum.Distance + next.Direction * next.Blocks * (acum.IncX - acum.IncY) 
+                        }
+                    );
 
-            Console.WriteLine(part1);
+            Console.WriteLine("Part 1: " + Math.Abs(part1.Distance));
 
+			// (Unfinished)
             var part2 = 
                 data
                 .Aggregate(
                     new
                     {
-                        Segments = new List<Point>(),
-                        Position = new Point { X = 0, Y = 0 },
+                        Segments = (IEnumerable<Segment>)new [] { new Segment() },
                         IncX = 0, IncY = 1
                     },
                     (acum, next) => 
                         {
-                            var newPosition = new Point
+                            var last = acum.Segments.Last();
+
+                            var newPosition = new Segment
                             {
-                                X = acum.Position.X - acum.IncY * next.Direction * next.Blocks,
-                                Y = acum.Position.Y + acum.IncX * next.Direction * next.Blocks
+                                startX = last.endX, startY = last.endY,
+                                endX = last.endX - acum.IncY * next.Direction * next.Blocks,
+                                endY = last.endY + acum.IncX * next.Direction * next.Blocks
                             };
-                            acum.Segments.Add(newPosition);
                             return new 
                             { 
-                                Segments = acum.Segments, 
-                                Position = newPosition,
+                                Segments = acum.Segments.Concat(new[] { newPosition }), 
                                 IncX = - acum.IncY * next.Direction, 
                                 IncY = acum.IncX * next.Direction                                 
                             };
@@ -71,13 +70,15 @@ namespace ConsoleApplication
                 );
 
             foreach(var point in part2.Segments)
-                Console.WriteLine(point);
+                Console.WriteLine(string.Format("({0},{1}) - ({2},{3})",point.startX,point.startY,point.endX,point.endY));
         }
     }
 
-    class Point
+    class Segment
     {
-        public int X { get; set; }
-        public int Y { get; set; }
+        public int startX { get; set; }
+        public int startY { get; set; }
+        public int endX { get; set; }
+        public int endY { get; set; }
     }
 }
